@@ -51,3 +51,8 @@ if(USE_SYSTEM_LLVM)
     )
   target_link_libraries(llvm-cbe ${llvm_libs})
 endif()
+
+install(
+    TARGETS llvm-cbe
+    DESTINATION bin
+)
