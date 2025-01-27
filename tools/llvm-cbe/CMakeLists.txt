@@ -40,6 +40,7 @@ if(USE_SYSTEM_LLVM)
     CBackendInfo
     CodeGen
     X86CodeGen
+    X86AsmParser
     Core
     IRReader
     MC
