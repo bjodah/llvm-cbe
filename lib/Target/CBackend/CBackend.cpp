@@ -79,6 +79,21 @@ auto TryAsFunction(FunctionInfoVariant FIV) {
   return F == nullptr ? std::nullopt : std::optional(*F);
 }
 
+static unsigned getGlobalObjectAlignment(const GlobalObject *GO) {
+#if LLVM_VERSION_MAJOR >= 21
+  MaybeAlign Alignment;
+  if (const auto *F = dyn_cast<Function>(GO))
+    Alignment = F->getAlign();
+  else if (const auto *GV = dyn_cast<GlobalVariable>(GO))
+    Alignment = GV->getAlign();
+  else
+    return 0;
+  return Alignment ? Alignment->value() : 0;
+#else
+  return GO->getAlignment();
+#endif
+}
+
 auto GetFunctionType(FunctionInfoVariant FIV) {
   return VisitFunctionInfoVariant(&Function::getFunctionType,
                                   &CallInst::getFunctionType, FIV);
@@ -2538,7 +2553,7 @@ void CWriter::generateHeader(Module &M) {
         Out << "__thread ";
 
       Type *ElTy = I->getValueType();
-      unsigned Alignment = I->getAlignment();
+      unsigned Alignment = getGlobalObjectAlignment(&*I);
       bool IsOveraligned =
           Alignment && Alignment > TD->getABITypeAlign(ElTy).value();
       if (IsOveraligned) {
@@ -2664,7 +2679,7 @@ void CWriter::generateHeader(Module &M) {
       Out << " __HIDDEN__";
     }
 
-    unsigned Alignment = I->getAlignment();
+    unsigned Alignment = getGlobalObjectAlignment(&*I);
     if (Alignment != 0) {
       headerUseFunctionAlign();
       Out << " __FUNCTIONALIGN__(" << Alignment << ") ";
@@ -2704,7 +2719,7 @@ void CWriter::generateHeader(Module &M) {
         Out << "__thread ";
 
       Type *ElTy = I->getValueType();
-      unsigned Alignment = I->getAliaseeObject()->getAlignment();
+      unsigned Alignment = getGlobalObjectAlignment(I->getAliaseeObject());
       bool IsOveraligned =
           Alignment && Alignment > TD->getABITypeAlign(ElTy).value();
       if (IsOveraligned) {
@@ -3444,7 +3459,7 @@ void CWriter::declareOneGlobalVariable(GlobalVariable *I) {
     Out << "__thread ";
 
   Type *ElTy = I->getValueType();
-  unsigned Alignment = I->getAlignment();
+  unsigned Alignment = getGlobalObjectAlignment(I);
   bool IsOveraligned =
       Alignment && Alignment > TD->getABITypeAlign(ElTy).value();
   if (IsOveraligned) {
@@ -5294,7 +5309,8 @@ std::string CWriter::InterpretASMConstraint(InlineAsm::ConstraintInfo &c) {
 }
 
 // TODO: import logic from AsmPrinter.cpp
-static std::string gccifyAsm(std::string asmstr) {
+static std::string gccifyAsm(StringRef AsmStr) {
+  std::string asmstr = AsmStr.str();
   for (std::string::size_type i = 0; i != asmstr.size(); ++i)
     if (asmstr[i] == '\n')
       asmstr.replace(i, 1, "\\n");

@@ -39,6 +39,9 @@ public:
         Lowering(TM) {}
   bool enableAtomicExpand() const override;
   const TargetLowering *getTargetLowering() const override;
+#if LLVM_VERSION_MAJOR >= 21
+  const TargetRegisterInfo *getRegisterInfo() const override { return nullptr; }
+#endif
   const CTargetLowering Lowering;
 };
 

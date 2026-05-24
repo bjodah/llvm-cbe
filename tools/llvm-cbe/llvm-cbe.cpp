@@ -230,7 +230,11 @@ static int compileModule(char **argv, LLVMContext &Context) {
 
     // If we are supposed to override the target triple, do so now.
     if (!TargetTriple.empty())
+#if LLVM_VERSION_MAJOR >= 21
+      mod->setTargetTriple(Triple(Triple::normalize(TargetTriple)));
+#else
       mod->setTargetTriple(Triple::normalize(TargetTriple));
+#endif
     TheTriple = Triple(mod->getTargetTriple());
   } else {
     TheTriple = Triple(Triple::normalize(TargetTriple));
@@ -297,7 +301,11 @@ static int compileModule(char **argv, LLVMContext &Context) {
   // Jackson Korba 9/30/14
   // OwningPtr<targetMachine>
   std::unique_ptr<TargetMachine> target(TheTarget->createTargetMachine(
+#if LLVM_VERSION_MAJOR >= 21
+      TheTriple, codegen::getMCPU(), FeaturesStr, Options,
+#else
       TheTriple.getTriple(), codegen::getMCPU(), FeaturesStr, Options,
+#endif
       llvm::codegen::getRelocModel()));
   assert(target.get() && "Could not allocate target machine!");
   assert(mod && "Should have exited after outputting help!");

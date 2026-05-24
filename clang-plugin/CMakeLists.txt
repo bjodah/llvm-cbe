@@ -1,8 +1,11 @@
 IF (NOT DEFINED LLVM_VERSION_MAJOR)
   # Standalone build: requires both LLVM and Clang CMake packages
-  project(CBackendPlugin)
   cmake_minimum_required(VERSION 3.20.0)
-  find_package(LLVM 20.1 REQUIRED CONFIG)
+  project(CBackendPlugin)
+  find_package(LLVM REQUIRED CONFIG)
+  if (LLVM_VERSION_MAJOR LESS 20 OR LLVM_VERSION_MAJOR GREATER 21)
+    message(FATAL_ERROR "CBackendPlugin supports LLVM 20 and 21; found LLVM ${LLVM_PACKAGE_VERSION}")
+  endif()
   find_package(Clang REQUIRED CONFIG)
   list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
   include(AddLLVM)
@@ -16,8 +19,13 @@ endif()
 
 # Internal Clang CodeGen headers (ABIInfo.h, TargetInfo.h, etc.) are not
 # exported; derive path from the LLVM source include directory.
-get_filename_component(_llvm_src "${LLVM_MAIN_INCLUDE_DIR}" DIRECTORY)
-include_directories(${_llvm_src}/../clang/lib/CodeGen)
+if(DEFINED LLVM_PROJECT_SOURCE_DIR AND EXISTS "${LLVM_PROJECT_SOURCE_DIR}/clang/lib/CodeGen/ABIInfo.h")
+  set(_clang_codegen_dir "${LLVM_PROJECT_SOURCE_DIR}/clang/lib/CodeGen")
+else()
+  get_filename_component(_llvm_src "${LLVM_MAIN_INCLUDE_DIR}" DIRECTORY)
+  set(_clang_codegen_dir "${_llvm_src}/../clang/lib/CodeGen")
+endif()
+include_directories(${_clang_codegen_dir})
 
 add_llvm_library(CBackendPlugin MODULE
   CBackend.cpp
