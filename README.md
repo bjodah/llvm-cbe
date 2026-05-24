@@ -73,6 +73,17 @@ If you used your distribution's package, put it wherever you feel like:
     build$ cmake .. -G "Ninja"
     build$ ninja llvm-cbe
 ```
+Here's an example on how to build against llvm-21:
+```
+  cmake -S . -B build-llvm21 \
+    -DLLVM_DIR=/opt-2/llvm-21/lib/cmake/llvm \
+    -DClang_DIR=/opt-2/llvm-21/lib/cmake/clang \
+    -DLLVM_PROJECT_SOURCE_DIR=/src-2/llvm-project-llvmorg-21.1.8 \
+    -DCMAKE_BUILD_TYPE=Release
+
+  cmake --build build-llvm21 -j2
+```
+
 Step 3: Usage Examples
 ======================
 
