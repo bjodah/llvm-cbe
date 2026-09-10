@@ -38,4 +38,8 @@ if(USE_SYSTEM_LLVM)
   target_link_libraries(llvm-cbe
     LLVM
     ${llvm_libs})
+
+  install(TARGETS llvm-cbe
+    RUNTIME DESTINATION bin
+  )
 endif()
